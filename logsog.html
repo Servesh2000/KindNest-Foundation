@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kindnest Login & Signup</title>
+
+<style>
+:root{
+  --ac1:#ff7a18;
+  --ac2:#6c63ff;
+  --bg1:#0b1220;
+  --bg2:#0f172b;
+  --card:#ffffff10;
+  --white:#eaf3ff;
+  font-family:'Poppins',sans-serif;
+}
+body{
+  margin:0;
+  background:linear-gradient(160deg,var(--bg1),var(--bg2));
+  display:flex;justify-content:center;align-items:center;
+  min-height:100vh;color:var(--white);
+}
+
+/* container */
+.box{
+  width:380px;
+  background:var(--card);
+  padding:28px;
+  border-radius:16px;
+  box-shadow:0 10px 40px #0008;
+  backdrop-filter:blur(12px);
+  animation:fade 0.4s ease;
+}
+@keyframes fade{
+  from{opacity:0;transform:translateY(20px);}
+  to{opacity:1;transform:translateY(0);}
+}
+h2{text-align:center;margin-bottom:14px;color:var(--white);}
+
+input,select{
+  width:100%;padding:12px;margin-top:8px;
+  border-radius:10px;border:none;
+  background:#ffffff15;color:white;
+}
+button{
+  width:100%;padding:12px;margin-top:16px;
+  background:linear-gradient(90deg,var(--ac1),var(--ac2));
+  border:none;border-radius:10px;
+  font-size:16px;font-weight:600;
+  color:white;cursor:pointer;
+  transition:0.2s;
+}
+button:hover{opacity:0.9;}
+
+.toggle{
+  margin-top:14px;text-align:center;font-size:14px;
+}
+.toggle span{
+  color:var(--ac2);cursor:pointer;font-weight:600;
+}
+
+/* tabs */
+.role-box{
+  display:flex;gap:8px;margin-top:10px;
+}
+.role-box button{
+  flex:1;padding:8px;
+  background:#ffffff10;border:1px solid #ffffff20;
+  font-size:14px;
+}
+.role-active{
+  background:linear-gradient(90deg,var(--ac2),var(--ac1)) !important;
+  border:none !important;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box" id="loginBox">
+    
+  <h2>Kindnest Foundation</h2>
+
+  <div class="role-box">
+    <button id="btnUser" class="role-active" onclick="selectRole('user')">User</button>
+    <button id="btnNGO" onclick="selectRole('ngo')">NGO</button>
+    <button id="btnAdmin" onclick="selectRole('admin')">Admin</button>
+  </div>
+
+  <div style="margin-top:14px">
+    <label>Email</label>
+    <input id="loginEmail" placeholder="Enter Email">
+
+    <label style="margin-top:10px">Password</label>
+    <input id="loginPass" type="password" placeholder="Enter Password">
+
+    
+  </div>
+
+  <button onclick="loginNow()">Login</button>
+
+  <div class="toggle">
+    Don’t have an account? <span onclick="showSignup()">Sign up</span>
+  </div>
+</div>
+
+
+<!-- SIGNUP BOX -->
+<div class="box" id="signupBox" style="display:none">
+  <h2>Create User Account</h2>
+
+  <label>Name</label>
+  <input id="suName" placeholder="Your Name">
+
+  <label style="margin-top:10px">Email</label>
+  <input id="suEmail" placeholder="Your Email">
+
+  <label style="margin-top:10px">Password</label>
+  <input id="suPass" type="password" placeholder="Password">
+
+  <button onclick="signupNow()">Sign Up</button>
+
+  <div class="toggle">
+    Already have account? <span onclick="showLogin()">Login</span>
+  </div>
+</div>
+
+
+<script>
+let CURRENT_ROLE = "user"; // default role
+
+function selectRole(role){
+  CURRENT_ROLE = role;
+  document.getElementById("btnUser").classList.remove("role-active");
+  document.getElementById("btnNGO").classList.remove("role-active");
+  document.getElementById("btnAdmin").classList.remove("role-active");
+
+  if(role==="user") document.getElementById("btnUser").classList.add("role-active");
+  if(role==="ngo") document.getElementById("btnNGO").classList.add("role-active");
+  if(role==="admin") document.getElementById("btnAdmin").classList.add("role-active");
+}
+
+// -------- LOGIN --------
+function loginNow(){
+  let email = loginEmail.value.trim();
+  let pass = loginPass.value.trim();
+
+  if(!email || !pass){
+    alert("Enter email & password");
+    return;
+  }
+
+  if(CURRENT_ROLE === "admin"){
+    if(email === "admin@kindnest.com" && pass === "admin123"){
+      localStorage.setItem("current_user_session","ADMIN");
+      window.location.href = "admin.html";
+      return;
+    } else {
+      alert("Invalid Admin Credentials");
+      return;
+    }
+  }
+
+  if(CURRENT_ROLE === "ngo"){
+    localStorage.setItem("current_user_session","NGO:"+email);
+    window.location.href = "ngo.html";
+    return;
+  }
+
+  // USER LOGIN
+  let users = JSON.parse(localStorage.getItem("kindnest_users")||"[]");
+  let found = users.find(u=>u.email===email && u.pass===pass);
+
+  if(found){
+    localStorage.setItem("current_user_session",email);
+    window.location.href = "user.html";
+  } else {
+    alert("Wrong user credentials or user doesn’t exist!");
+  }
+}
+
+// -------- SIGNUP --------
+function signupNow(){
+  let name = suName.value.trim();
+  let email = suEmail.value.trim();
+  let pass = suPass.value.trim();
+
+  if(!name || !email || !pass){
+    alert("Fill all fields");
+    return;
+  }
+
+  let users = JSON.parse(localStorage.getItem("kindnest_users")||"[]");
+  if(users.find(u=>u.email===email)){
+    alert("Email already registered!");
+    return;
+  }
+
+  users.push({name,email,pass});
+  localStorage.setItem("kindnest_users",JSON.stringify(users));
+
+  alert("Signup successful! Please login.");
+  showLogin();
+}
+
+// toggle UI
+function showSignup(){
+  loginBox.style.display = "none";
+  signupBox.style.display = "block";
+}
+function showLogin(){
+  signupBox.style.display = "none";
+  loginBox.style.display = "block";
+}
+</script>
+
+</body>
+</html>

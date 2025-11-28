@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kindnest — Admin Dashboard</title>
+  <meta name="color-scheme" content="dark light">
+  <style>
+    /* ---------- vars ---------- */
+    :root{
+      --bg-1: #07102a;
+      --bg-2: #061026;
+      --muted: #9aa4b2;
+      --accent1:#ff7a18;
+      --accent2:#6c63ff;
+      --glass: rgba(255,255,255,0.03);
+      --panel: rgba(255,255,255,0.02);
+      --success:#10b981;
+      --danger:#ef4444;
+      --radius:14px;
+      --shadow: 0 8px 30px rgba(2,6,23,0.6);
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;color:#e6eef8;background:
+      radial-gradient(1200px 400px at 10% 10%, rgba(108,99,255,0.08), transparent 12%),
+      linear-gradient(180deg,var(--bg-1) 0%, var(--bg-2) 100%); -webkit-font-smoothing:antialiased}
+
+    /* layout */
+    .app { display:grid; grid-template-columns:260px 1fr; gap:20px; padding:20px; min-height:100vh; }
+    .sidebar{ background: linear-gradient(180deg, rgba(12,18,34,0.9), rgba(6,10,20,0.7)); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:14px; min-height:calc(100vh - 40px);}
+    .brand{display:flex;gap:12px;align-items:center;font-weight:700}
+    .logo-badge{ width:46px; height:46px; border-radius:10px; background:linear-gradient(135deg,var(--accent1),var(--accent2)); display:flex; align-items:center; justify-content:center; color:white; font-weight:800; box-shadow:0 8px 24px rgba(108,99,255,0.18); font-size:18px;}
+    .brand .title{font-size:15px}
+    .nav{ margin-top:10px; display:flex; flex-direction:column; gap:6px }
+    .nav a{ color:#a9bdcf; text-decoration:none; padding:10px; border-radius:10px; display:block; cursor:pointer; }
+    .nav a.active, .nav a:hover{ background:linear-gradient(90deg, rgba(108,99,255,0.08), rgba(255,122,24,0.06)); color:white; }
+    .sidebar .small{ color:var(--muted); font-size:13px; margin-top:auto }
+
+    /* workspace */
+    .workspace{ display:flex; flex-direction:column; gap:18px; }
+    .topbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02)); padding:12px 16px; border-radius:12px; backdrop-filter:blur(6px); box-shadow:0 6px 24px rgba(2,6,23,0.35); }
+    .searchbox input{ background:transparent; border:1px solid rgba(255,255,255,0.05); padding:10px 12px; border-radius:10px; color:#e6eef8; width:340px; }
+    .top-actions{ display:flex; gap:10px; align-items:center; }
+    .icon-btn{ background:transparent; border:1px solid rgba(255,255,255,0.03); padding:8px 10px; border-radius:10px; color:#dfeeff; cursor:pointer; }
+    .badge{ background:linear-gradient(90deg,var(--accent2),var(--accent1)); padding:6px 10px; border-radius:999px; color:white; font-weight:700; font-size:13px; box-shadow:0 6px 20px rgba(108,99,255,0.18); }
+
+    /* stats */
+    .stats{ display:flex; gap:14px; flex-wrap:wrap; }
+    .stat{ flex:1 1 200px; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); padding:18px; border-radius:12px; color:white; min-width:170px; position:relative; overflow:hidden; box-shadow: 0 10px 40px rgba(2,6,23,0.45); }
+    .stat .num{ font-size:28px; font-weight:800 }
+    .stat .lbl{ color:var(--muted); font-size:13px; margin-top:6px }
+    .spark{ position:absolute; right:-30px; top:-20px; opacity:0.12; font-size:96px; transform:rotate(-20deg); font-weight:900 }
+
+    /* main layout */
+    .main-grid{ display:grid; grid-template-columns:1fr 420px; gap:18px; margin-top:6px; }
+    .card{ background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:12px; padding:14px; color:#eaf3ff; box-shadow:0 8px 30px rgba(2,6,23,0.5); }
+
+    /* posts table */
+    table{ width:100%; border-collapse:collapse; font-size:14px; }
+    th,td{ padding:10px 8px; text-align:left; color:#dce9ff; vertical-align:middle; }
+    thead th{ color:#9fb6d9; font-weight:700; font-size:13px; border-bottom:1px solid rgba(255,255,255,0.03) }
+    tr.row:hover{ background:linear-gradient(90deg, rgba(108,99,255,0.03), rgba(255,122,24,0.02)); }
+    .pill{ padding:6px 10px; border-radius:999px; font-weight:700; font-size:12px; display:inline-block }
+    .pill.pending{ background:#ffe9d6; color:#b45309 }
+    .pill.approved{ background:#e6ffef; color:#065f46 }
+    .pill.assigned{ background:#eef2ff; color:#4438c8 }
+    .pill.completed{ background:#ddffec; color:#0b6b3a }
+
+    /* actions */
+
+    
+    .row-actions button{ margin-right:6px; padding:8px 10px; border-radius:8px; border:none; cursor:pointer }
+    .btn-approve{ background:linear-gradient(90deg,#10b981,#34d399); color:white }
+    .btn-reject{ background:linear-gradient(90deg,#ef4444,#fb7185); color:white }
+    .btn-assign{ background:linear-gradient(90deg,#6c63ff,#9d94ff); color:white }
+
+    /* right column */
+    .right-column{ display:flex; flex-direction:column; gap:14px; }
+    .notif-list{ max-height:360px; overflow:auto; padding-right:6px }
+    .notif-item{ padding:10px; border-radius:8px; margin-bottom:8px; background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005)); }
+    .small{ font-size:13px; color:var(--muted) }
+
+    /* charts */
+    .chart-wrap{ height:200px; padding:8px; border-radius:8px; background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent) }
+    canvas{ width:100%; height:100% }
+
+    /* pages */
+    .page{ display:block }
+    .hidden{ display:none }
+
+    /* responsive */
+    @media (max-width:980px){
+      .app{ grid-template-columns:1fr; padding:12px }
+      .main-grid{ grid-template-columns:1fr }
+      .searchbox input{ width:100% }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo-badge">K</div>
+        <div>
+          <div class="title">Kindnest</div>
+          <div class="small">Admin Panel</div>
+        </div>
+      </div>
+
+      <nav class="nav" aria-label="main-nav">
+        <a onclick="showPage('dashboard')" id="link-dashboard" class="active">Dashboard</a>
+        <a onclick="showPage('posts')" id="link-posts">Posts</a>
+        <a onclick="showPage('donations')" id="link-donations">Donations</a>
+        <a onclick="showPage('ngos')" id="link-ngos">NGOs</a>
+        <a onclick="showPage('reports')" id="link-reports">Reports</a>
+        <a onclick="showPage('settings')" id="link-settings">Settings</a>
+      </nav>
+
+      <div class="small">Signed in as <strong>Admin</strong></div>
+      <div class="small">Tip: Use Assign to connect an NGO quickly</div>
+    </aside>
+
+    <!-- WORKSPACE -->
+    <div class="workspace">
+      <header class="topbar">
+        <div class="searchbox">
+          <input id="searchInput" placeholder="Search posts, titles or category..." />
+        </div>
+        <div class="top-actions">
+          <button class="icon-btn" id="refreshBtn" title="Refresh">⟳</button>
+          <button class="icon-btn" id="exportCsv" title="Export CSV">⤓ CSV</button>
+          <button class="icon-btn" id="openNotifs" title="Notifications">🔔 <span id="notifCount" class="badge" style="margin-left:8px">0</span></button>
+          <button class="icon-btn" onclick="goHome()">🏠 Home</button>
+          <button class="icon-btn" onclick="logout()">🚪 Logout</button>
+
+        
+        </div>
+      </header>
+
+      <!-- PAGES CONTAINER -->
+      <div class="page" id="page-dashboard">
+        <!-- STATS -->
+        <section class="stats" aria-label="stats">
+          <div class="stat card">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div><div class="num" id="statTotal">0</div><div class="lbl">Total Posts</div></div>
+              <div class="spark">✦</div>
+            </div>
+          </div>
+          <div class="stat card">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div><div class="num" id="statPending">0</div><div class="lbl">Pending</div></div>
+              <div class="spark">◐</div>
+            </div>
+          </div>
+          <div class="stat card">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div><div class="num" id="statAssigned">0</div><div class="lbl">Assigned</div></div>
+              <div class="spark">⚑</div>
+            </div>
+          </div>
+          <div class="stat card">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div><div class="num" id="statCompleted">0</div><div class="lbl">Completed</div></div>
+              <div class="spark">✔</div>
+            </div>
+          </div>
+        </section>
+
+        <div class="main-grid">
+          <section class="card" aria-labelledby="incoming-title">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+              <h3 id="incoming-title" style="margin:0">Incoming Posts</h3>
+              <div class="small">Auto-synced via localStorage</div>
+            </div>
+
+            <div style="overflow:auto">
+              <table id="postsTable" role="table" aria-describedby="incoming-title">
+                <thead>
+                  <tr><th>Title</th><th>Category</th><th>Type</th><th>Status</th><th style="width:220px">Actions</th></tr>
+                </thead>
+                <tbody id="postsTbody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <aside class="right-column">
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <h4 style="margin:0">Notifications</h4>
+                <button class="btn-ghost" id="clearNotifs">Clear</button>
+              </div>
+              <div class="notif-list" id="notifList"></div>
+            </div>
+
+            <div class="card">
+              <h4 style="margin-top:0">Category Chart</h4>
+              <div class="chart-wrap">
+                <canvas id="catChart"></canvas>
+              </div>
+              <div style="display:flex;justify-content:space-around;margin-top:10px">
+                <div><div class="small">Money</div><div id="cMoney">0</div></div>
+                <div><div class="small">Food</div><div id="cFood">0</div></div>
+                <div><div class="small">Clothes</div><div id="cCloth">0</div></div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <!-- POSTS PAGE -->
+      <div class="page hidden" id="page-posts" aria-live="polite">
+        <section class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <h3 style="margin:0">Posts Management</h3>
+            <div class="small">Search & actions separated</div>
+          </div>
+          <div style="margin-top:12px"><input id="postsSearch" placeholder="Filter posts on this page..." style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:#eaf3ff" /></div>
+
+          <div style="margin-top:12px;overflow:auto">
+            <table role="table" style="width:100%">
+              <thead><tr><th>Title</th><th>Category</th><th>Type</th><th>Status</th><th>NGO</th><th>Actions</th></tr></thead>
+              <tbody id="postsPageTbody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- DONATIONS PAGE -->
+      <div class="page hidden" id="page-donations">
+        <section class="card">
+          <h3>Donations</h3>
+          <p class="small">Donation transactions & logs will appear here. (Placeholder)</p>
+        </section>
+      </div>
+
+      <!-- NGOs PAGE -->
+      <div class="page hidden" id="page-ngos">
+        <section class="card">
+          <h3>NGO Directory</h3>
+          <p class="small">Add/Verify/Manage NGO partners</p>
+          <div id="ngosList" style="margin-top:12px"></div>
+        </section>
+      </div>
+
+      <!-- REPORTS PAGE -->
+      <div class="page hidden" id="page-reports">
+        <section class="card">
+          <h3>Reports & Exports</h3>
+          <p class="small">Monthly reports, charts & CSV exports.</p>
+          <div id="reportsArea" style="margin-top:12px"></div>
+        </section>
+      </div>
+
+      <!-- SETTINGS PAGE -->
+      <div class="page hidden" id="page-settings">
+        <section class="card">
+          <h3>Settings</h3>
+          <p class="small">Admin preferences & system configurations.</p>
+          <div style="margin-top:12px">
+            <label style="display:block;margin-bottom:8px">Auto-approve demo posts:
+              <select id="autoApproveToggle"><option value="on">On</option><option value="off">Off</option></select>
+            </label>
+            <button id="resetDemo" class="icon-btn">Reset Demo Data</button>
+          </div>
+        </section>
+      </div>
+
+    </div> <!-- end workspace -->
+  </div> <!-- end app -->
+
+  <script>
+    // LocalStorage keys
+    const LS_POSTS = 'kn_posts_v2';
+    const LS_NOTIFS = 'kn_notifs_v2';
+    const LS_NGOS = 'kn_ngos_v1';
+
+    // Helpers
+    const $ = id => document.getElementById(id);
+    function readPosts(){ return JSON.parse(localStorage.getItem(LS_POSTS) || '[]'); }
+    function savePosts(p){ localStorage.setItem(LS_POSTS, JSON.stringify(p)); }
+    function readNotifs(){ return JSON.parse(localStorage.getItem(LS_NOTIFS) || '[]'); }
+    function saveNotifs(n){ localStorage.setItem(LS_NOTIFS, JSON.stringify(n)); }
+    function readNgos(){ return JSON.parse(localStorage.getItem(LS_NGOS) || '[]'); }
+    function saveNgos(n){ localStorage.setItem(LS_NGOS, JSON.stringify(n)); }
+
+    // If no demo posts exist, seed sample
+    if(!localStorage.getItem(LS_POSTS)){
+      const demo = [
+        { id: Date.now()-80000, title:'Food for 30 people', category:'Food', type:'Request', desc:'Need cooked food at community center', status:'pending', ngo:null, timeline:[] },
+        { id: Date.now()-60000, title:'Clothes donation', category:'Clothes', type:'Donation', desc:'Winter clothes - medium/large', status:'pending', ngo:null, timeline:[] },
+        { id: Date.now()-30000, title:'Urgent medical aid', category:'Money', type:'Request', desc:'Funds required for medicines', status:'pending', ngo:null, timeline:[] }
+      ];
+      savePosts(demo);
+    }
+
+    // If no NGOs exist, seed example NGOs
+    if(!localStorage.getItem(LS_NGOS)){
+      saveNgos([{name:'Helping Hands', contact:'9876543210'},{name:'Food For All', contact:'9876501234'},{name:'Care & Cloth', contact:'9876512345'}]);
+    }
+
+    // Render functions
+    function renderStats(){
+      const posts = readPosts();
+      $('statTotal').textContent = posts.length;
+      $('statPending').textContent = posts.filter(p=>p.status==='pending').length;
+      $('statAssigned').textContent = posts.filter(p=>p.status==='assigned').length;
+      $('statCompleted').textContent = posts.filter(p=>p.status==='completed').length;
+    }
+
+    function renderTable(filter = ''){
+      const tbody = $('postsTbody');
+      const posts = readPosts().filter(p => (p.title + ' ' + p.category + ' ' + p.type + ' ' + (p.desc||'')).toLowerCase().includes(filter.toLowerCase()));
+      if(!posts.length){
+        tbody.innerHTML = '<tr class="row"><td colspan="5" style="color:var(--muted);padding:18px">No posts found</td></tr>';
+        return;
+      }
+      tbody.innerHTML = posts.map(p => `
+        <tr class="row">
+          <td style="min-width:220px"><strong>${escapeHtml(p.title)}</strong><div class="small">${escapeHtml(p.desc||'')}</div></td>
+          <td>${escapeHtml(p.category)}</td>
+          <td>${escapeHtml(p.type)}</td>
+          <td>
+            <span class="pill ${p.status}">${p.status}</span>
+            ${p.ngo ? '<div class="small">NGO: '+escapeHtml(p.ngo)+'</div>' : ''}
+          </td>
+          <td class="row-actions">
+            <button class="btn-approve" onclick="approvePost(${p.id})">Approve</button>
+            <button class="btn-reject" onclick="rejectPost(${p.id})">Reject</button>
+            <button class="btn-assign" onclick="assignPrompt(${p.id})">Assign</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderPostsPageTable(filter=''){
+      const tbody = $('postsPageTbody');
+      const posts = readPosts().filter(p => (p.title + ' ' + p.category + ' ' + p.type + ' ' + (p.desc||'')).toLowerCase().includes(filter.toLowerCase()));
+      if(!posts.length){
+        tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);padding:18px">No posts found</td></tr>';
+        return;
+      }
+      tbody.innerHTML = posts.map(p => `
+        <tr>
+          <td><strong>${escapeHtml(p.title)}</strong></td>
+          <td>${escapeHtml(p.category)}</td>
+          <td>${escapeHtml(p.type)}</td>
+          <td><span class="pill ${p.status}">${p.status}</span></td>
+          <td>${p.ngo || '-'}</td>
+          <td>
+            <button class="btn-approve" onclick="approvePost(${p.id})">Approve</button>
+            <button class="btn-reject" onclick="rejectPost(${p.id})">Reject</button>
+            <button class="btn-assign" onclick="assignPrompt(${p.id})">Assign</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderNotifs(){
+      const list = readNotifs();
+      $('notifCount').textContent = list.filter(n => !n.read).length || list.length;
+      const wrap = $('notifList');
+      wrap.innerHTML = list.length ? list.map(n => `
+        <div class="notif-item">
+          <div style="font-weight:700">${escapeHtml(n.title || 'Notification')}</div>
+          <div class="small">${escapeHtml(n.text || '')}</div>
+          <div class="small" style="margin-top:6px;color:var(--muted)">${escapeHtml(n.when)}</div>
+        </div>
+      `).join('') : '<div class="small">No notifications</div>';
+    }
+
+    function renderNgosList(){
+      const list = readNgos();
+      const wrap = $('ngosList');
+      wrap.innerHTML = list.length ? list.map(n => `<div class="card"><strong>${escapeHtml(n.name)}</strong><div class="small">Contact: ${escapeHtml(n.contact||'-')}</div></div>`).join('') : '<p class="small">No NGOs registered</p>';
+    }
+
+    // Actions & Utilities
+    function addNotif(title, text){
+      const n = readNotifs();
+      n.unshift({ title, text, when: new Date().toLocaleString(), read:false });
+      saveNotifs(n);
+      renderNotifs();
+    }
+
+    function approvePost(id){
+      const posts = readPosts();
+      const p = posts.find(x=>x.id===id);
+      if(!p) return alert('Post not found');
+      p.status = 'approved';
+      p.timeline = p.timeline || [];
+      p.timeline.push({ at: new Date().toISOString(), text: 'Approved by Admin' });
+      savePosts(posts);
+      addNotif('Post approved', `Your post '${p.title}' was approved by Admin.`);
+      renderAll();
+    }
+
+    function rejectPost(id){
+      if(!confirm('Reject and remove this post?')) return;
+      let posts = readPosts();
+      const p = posts.find(x=>x.id===id);
+      posts = posts.filter(x=>x.id!==id);
+      savePosts(posts);
+      addNotif('Post rejected', `A post '${p.title}' was rejected by Admin.`);
+      renderAll();
+    }
+
+    function assignPrompt(id){
+      const ngos = readNgos();
+      const list = ngos.map(n=>n.name).join(', ');
+      const ngo = prompt('Assign NGO (choose/enter name). Available: ' + list, ngos[0] && ngos[0].name || '');
+      if(!ngo) return;
+      assignNgo(id, ngo);
+    }
+
+    function assignNgo(id, ngo){
+      const posts = readPosts();
+      const p = posts.find(x=>x.id===id);
+      if(!p) return alert('Post not found');
+      p.status = 'assigned';
+      p.ngo = ngo;
+      p.timeline = p.timeline || [];
+      p.timeline.push({ at: new Date().toISOString(), text: `Assigned to ${ngo}` });
+      savePosts(posts);
+      addNotif('Post assigned', `'${p.title}' → ${ngo}`);
+      renderAll();
+    }
+
+    // Export CSV
+    $('exportCsv').addEventListener('click', ()=> {
+      const posts = readPosts();
+      if(!posts.length) return alert('No posts to export');
+      const rows = [['id','title','category','type','status','ngo','desc']];
+      posts.forEach(p => rows.push([p.id, p.title, p.category, p.type, p.status, p.ngo||'', (p.desc||'').replace(/\n/g,' ')]));
+      const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], {type:'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'kindnest-posts.csv'; a.click(); URL.revokeObjectURL(url);
+    });
+
+    // Search & refresh
+    $('searchInput').addEventListener('input', (e)=> renderTable(e.target.value));
+    $('refreshBtn').addEventListener('click', ()=> renderAll());
+
+    // notifications UI
+    $('openNotifs').addEventListener('click', ()=>{
+      const list = readNotifs();
+      if(!list.length) return alert('No notifications');
+      alert(list.slice(0,6).map(n => `${n.when}\n${n.title} — ${n.text}`).join('\n\n'));
+    });
+    $('clearNotifs').addEventListener('click', ()=>{ saveNotifs([]); renderNotifs(); });
+
+    // chart draw
+    function drawChart(){
+      const posts = readPosts();
+      const counts = { Money:0, Food:0, Clothes:0, Other:0 };
+      posts.forEach(p => {
+        const cat = p.category || 'Other';
+        if(counts[cat] !== undefined) counts[cat]++; else counts.Other++;
+      });
+      $('cMoney').textContent = counts.Money;
+      $('cFood').textContent = counts.Food;
+      $('cCloth').textContent = counts.Clothes;
+
+      const c = document.getElementById('catChart');
+      c.width = c.clientWidth * devicePixelRatio;
+      c.height = c.clientHeight * devicePixelRatio;
+      const ctx = c.getContext('2d');
+      ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0); // scale for crispness
+      ctx.clearRect(0,0,c.clientWidth,c.clientHeight);
+      const keys = ['Money','Food','Clothes','Other'];
+      const max = Math.max(1, ...keys.map(k=>counts[k]||0));
+      const w = c.clientWidth / keys.length;
+      keys.forEach((k,i)=>{
+        const h = (counts[k]||0)/max * (c.clientHeight - 40);
+        ctx.fillStyle = i%2? 'rgba(108,99,255,0.9)' : 'rgba(255,122,24,0.95)';
+        const bx = i*w + 16;
+        const by = c.clientHeight - h - 20;
+        ctx.fillRect(bx, by, Math.max(8,w - 32), h);
+        ctx.fillStyle = '#cfe6ff';
+        ctx.font = '12px Inter, Arial';
+        ctx.fillText(`${k}`, bx, c.clientHeight - 4);
+        ctx.fillText(`${counts[k]||0}`, bx, by - 6);
+      });
+    }
+
+    // utilities
+    function escapeHtml(s){ return (''+(s||'')).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function saveNotifs(n){ localStorage.setItem(LS_NOTIFS, JSON.stringify(n)); }
+    function readNotifs(){ return JSON.parse(localStorage.getItem(LS_NOTIFS) || '[]'); }
+
+    // Posts page specific filter
+    $('postsSearch') && $('postsSearch').addEventListener('input', (e)=> renderPostsPageTable(e.target.value));
+
+    // Pages navigation
+    function showPage(id){
+      const pages = ['dashboard','posts','donations','ngos','reports','settings'];
+      pages.forEach(p => {
+        const el = $('page-' + p);
+        if(el) el.classList.add('hidden');
+        const link = $('link-' + p);
+        if(link) link.classList.remove('active');
+      });
+      const page = $('page-' + id);
+      if(page) page.classList.remove('hidden');
+      const activeLink = $('link-' + id);
+      if(activeLink) activeLink.classList.add('active');
+
+      // render content for page
+      if(id === 'dashboard') renderAll();
+      if(id === 'posts') renderPostsPageTable($('postsSearch') ? $('postsSearch').value : '');
+      if(id === 'ngos') renderNgosList();
+      if(id === 'reports') { drawChart(); renderAll(); }
+    }
+
+    // Reset demo data
+    $('resetDemo').addEventListener('click', ()=>{
+      if(!confirm('Reset demo posts and notifications?')) return;
+      localStorage.removeItem(LS_POSTS);
+      localStorage.removeItem(LS_NOTIFS);
+      localStorage.removeItem(LS_NGOS);
+      location.reload();
+    });
+
+    // Initial render
+    function renderAll(){
+      renderStats();
+      renderTable($('searchInput').value || '');
+      renderNotifs();
+      renderPostsPageTable('');
+      renderNgosList();
+      drawChart();
+    }
+    renderAll();
+
+    // Demo auto-approve: togglable via settings (default on)
+    let AUTO_APPROVE = true;
+    setInterval(()=>{
+      if(!AUTO_APPROVE) return;
+      const posts = readPosts();
+      const p = posts.find(x=>x.status==='pending');
+      if(p){
+        p.status = 'approved';
+        p.timeline = p.timeline || [];
+        p.timeline.push({ at:new Date().toISOString(), text:'Auto-approved (demo)'});
+        savePosts(posts);
+        addNotif('Auto-approved', `'${p.title}' was auto-approved (demo).`);
+        renderAll();
+      }
+    }, 14000);
+
+    // Expose some actions to global for onclick in markup
+    window.approvePost = approvePost;
+    window.rejectPost = rejectPost;
+    window.assignPrompt = assignPrompt;
+    window.assignNgo = assignNgo;
+    window.showPage = showPage;
+
+    // Hook auto-approve toggle control (if present)
+    const autoToggle = $('autoApproveToggle');
+    if(autoToggle){
+      AUTO_APPROVE = autoToggle.value === 'on';
+      autoToggle.addEventListener('change', (e)=> { AUTO_APPROVE = e.target.value === 'on'; });
+    }
+
+    // small helper listeners for accessibility
+    document.addEventListener('keydown', (e)=> {
+      if(e.key === 'Escape') { /* optional: close modals later */ }
+    });
+
+
+    function goHome(){
+  window.location.href = "index.html";
+}
+
+function logout(){
+  if(confirm("Are you sure you want to logout?")){
+    localStorage.removeItem("current_user_session");
+    window.location.href = "index.html";
+  }
+}
+
+
+  </script>
+</body>
+</html>

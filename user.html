@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Kindnest — User Dashboard</title>
+
+<style>
+:root{
+  --bg1:#0a0f1f; --bg2:#0c1227;
+  --ac1:#ff7a18; --ac2:#6c63ff;
+  --glass:rgba(255,255,255,0.05);
+  --card:rgba(255,255,255,0.04);
+  --radius:14px; --muted:#9aa4b2;
+  font-family:Inter, system-ui, sans-serif;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:#eaf3ff;
+  -webkit-font-smoothing:antialiased;min-height:100vh;display:flex
+}
+.sidebar{
+  width:260px;padding:20px;background:#0b1220dd;
+  border-radius:0 var(--radius) var(--radius) 0;
+  display:flex;flex-direction:column;gap:14px
+}
+.logo-badge{width:48px;height:48px;background:linear-gradient(135deg,var(--ac1),var(--ac2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700}
+.brand{display:flex;gap:12px;align-items:center}
+.small{color:var(--muted);font-size:13px}
+.nav a{
+  color:#b4c3d8;text-decoration:none;padding:10px;border-radius:10px;display:block;cursor:pointer
+}
+.nav a.active,.nav a:hover{background:linear-gradient(90deg,rgba(108,99,255,0.10),rgba(255,122,24,0.10));color:white}
+
+/* workspace */
+.workspace{padding:20px;flex:1;overflow:auto;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--card);padding:16px;border-radius:var(--radius);box-shadow:0 10px 30px rgba(0,0,0,0.4)}
+.input{padding:10px;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:white;width:100%}
+textarea{background:transparent;color:white;border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px;width:100%;min-height:90px}
+
+.btn{padding:10px 14px;background:linear-gradient(90deg,var(--ac2),var(--ac1));border:none;border-radius:10px;color:white;font-weight:600;cursor:pointer}
+.btn-ghost{padding:8px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);background:transparent;color:#eaf3ff}
+
+/* posts list */
+.post{padding:14px;background:rgba(255,255,255,0.03);border-radius:10px;margin-bottom:10px}
+.badge{padding:6px 10px;border-radius:999px;font-weight:700;font-size:12px;margin-left:8px}
+.pending{background:#ffedd5;color:#b45309}
+.approved{background:#dcfce7;color:#065f46}
+.assigned{background:#eef2ff;color:#4338ca}
+.progress{background:#fff7cc;color:#a16207}
+.completed{background:#d1fae5;color:#065f46}
+
+.timeline-item{font-size:13px;color:var(--muted);margin-top:4px}
+.img-thumb{max-width:180px;border-radius:10px;margin-top:8px}
+
+/* responsive */
+@media(max-width:900px){
+  body{flex-direction:column}
+  .sidebar{width:100%;border-radius:0;flex-direction:row;overflow:auto}
+}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="brand">
+    <div class="logo-badge">U</div>
+    <div>
+      <div style="font-weight:700">Kindnest User</div>
+      <div class="small" id="profileNameSmall">User Profile</div>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <a id="nav-home" onclick="showPage('home')" class="active">Home</a>
+    <a id="nav-create" onclick="showPage('create')">Create Post</a>
+    <a id="nav-my" onclick="showPage('myposts')">My Posts</a>
+    <a id="nav-notif" onclick="showPage('notifications')">Notifications</a>
+    <a id="nav-profile" onclick="showPage('profile')">Profile</a>
+  </nav>
+  <button class="btn-ghost" onclick="goHome()" style="margin-top:10px">🏠 Home</button>
+<button class="btn-ghost" onclick="logout()" style="margin-top:6px">🚪 Logout</button>
+
+</aside>
+
+<!-- Workspace -->
+<div class="workspace">
+
+  <!-- HOME -->
+  <section id="page-home" class="card">
+    <h2>Welcome, <span id="welcomeName">User</span> 👋</h2>
+    <p class="small">Track your donation requests & updates from NGOs & Admin.</p>
+
+    <div style="margin-top:16px" id="homeStats"></div>
+  </section>
+
+  <!-- CREATE POST -->
+  <section id="page-create" class="card" style="display:none">
+    <h3>Create New Post</h3>
+
+    <div style="margin-top:10px">
+      <label>Title</label>
+      <input id="pTitle" class="input" placeholder="Ex: Food needed for 20 people">
+    </div>
+
+    <div class="form" style="margin-top:10px">
+      <label>Category</label>
+      <select id="pCategory" class="input">
+        <option>Food</option>
+        <option>Clothes</option>
+        <option>Money</option>
+        <option>Other</option>
+      </select>
+    </div>
+
+    <div class="form" style="margin-top:10px">
+      <label>Type</label>
+      <select id="pType" class="input">
+        <option>Request</option>
+        <option>Donation</option>
+      </select>
+    </div>
+
+    <div style="margin-top:10px">
+      <label>Description</label>
+      <textarea id="pDesc"></textarea>
+    </div>
+
+    <div style="margin-top:10px">
+      <label>Upload Image</label>
+      <input type="file" id="pImg" accept="image/*" class="input">
+      <img id="imgPreview" class="img-thumb" style="display:none">
+    </div>
+
+    <button class="btn" style="margin-top:14px" onclick="createPost()">Submit Post</button>
+  </section>
+
+  <!-- MY POSTS -->
+  <section id="page-myposts" class="card" style="display:none">
+    <h3>My Posts</h3>
+    <div id="myPostsList" style="margin-top:12px"></div>
+  </section>
+
+  <!-- NOTIFICATIONS -->
+  <section id="page-notifications" class="card" style="display:none">
+    <h3>Notifications</h3>
+    <div id="notifList"></div>
+  </section>
+
+  <!-- PROFILE -->
+  <section id="page-profile" class="card" style="display:none">
+    <h3>My Profile</h3>
+
+    <div style="margin-top:10px">
+      <label>Name</label>
+      <input id="uName" class="input" placeholder="Your Name">
+    </div>
+
+    <div style="margin-top:10px">
+      <label>Phone</label>
+      <input id="uPhone" class="input" placeholder="Phone Number">
+    </div>
+
+    <div style="margin-top:10px">
+      <label>City</label>
+      <input id="uCity" class="input" placeholder="Your City">
+    </div>
+
+    <button class="btn" style="margin-top:12px" onclick="saveProfile()">Save Profile</button>
+  </section>
+
+</div>
+
+<script>
+// LocalStorage Keys
+const LS_POSTS = 'kn_posts_v2';
+const LS_NOTIFS = 'kn_notifs_v2';
+const LS_USER = 'kn_user_profile_v1';
+
+// helpers
+const $ = id => document.getElementById(id);
+const read = (k, def) => JSON.parse(localStorage.getItem(k) || JSON.stringify(def));
+const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+
+// ----------- NAVIGATION -----------
+function showPage(pg){
+  document.querySelectorAll('.workspace section').forEach(s => s.style.display='none');
+  document.getElementById('page-'+pg).style.display='block';
+  document.querySelectorAll('.nav a').forEach(a=>a.classList.remove('active'));
+  document.getElementById('nav-'+pg)?.classList.add('active');
+
+  if(pg==='myposts') renderMyPosts();
+  if(pg==='notifications') renderNotifs();
+  if(pg==='home') renderHome();
+  if(pg==='profile') loadProfile();
+}
+showPage('home');
+
+// ----------- PROFILE -----------
+function loadProfile(){
+  const p = read(LS_USER, {name:'',phone:'',city:''});
+  $('uName').value = p.name||'';
+  $('uPhone').value = p.phone||'';
+  $('uCity').value = p.city||'';
+}
+function saveProfile(){
+  const p = {
+    name:$('uName').value.trim(),
+    phone:$('uPhone').value.trim(),
+    city:$('uCity').value.trim()
+  };
+  save(LS_USER, p);
+  $('profileNameSmall').innerText = p.name||'User';
+  $('welcomeName').innerText = p.name||'User';
+  alert('Profile saved!');
+}
+loadProfile();
+
+// ----------- CREATE POST -----------
+let imgDataURL = '';
+
+$('pImg').addEventListener('change', e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const r = new FileReader();
+  r.onload = ev=>{
+    imgDataURL = ev.target.result;
+    $('imgPreview').src = imgDataURL;
+    $('imgPreview').style.display='block';
+  };
+  r.readAsDataURL(file);
+});
+
+function createPost(){
+  const title = $('pTitle').value.trim();
+  const cat = $('pCategory').value;
+  const type = $('pType').value;
+  const desc = $('pDesc').value.trim();
+
+  if(!title || !desc) return alert('Please fill all fields');
+
+  const posts = read(LS_POSTS, []);
+  posts.unshift({
+    id:Date.now(),
+    title, category:cat, type,
+    desc, status:'pending',
+    ngo:null,
+    proof:null,
+    image:imgDataURL,
+    user: read(LS_USER, {}).name || 'User',
+    timeline:[{at:new Date().toISOString(), text:'Post created by user'}]
+  });
+  save(LS_POSTS, posts);
+
+  addNotif("New Post Created", title);
+
+  alert('Post submitted!');
+  $('pTitle').value=''; $('pDesc').value='';
+  imgDataURL=''; $('imgPreview').style.display='none';
+
+  showPage('myposts');
+}
+
+// ----------- MY POSTS -----------
+function renderMyPosts(){
+  const user = read(LS_USER, {}).name;
+  const posts = read(LS_POSTS, []).filter(p=>p.user===user);
+
+  $('myPostsList').innerHTML = posts.length ?
+    posts.map(p=>`
+      <div class="post">
+        <h4>${p.title} <span class="badge ${p.status}">${p.status}</span></h4>
+        <div class="small">${p.category} • ${p.type}</div>
+        ${p.image ? `<img src="${p.image}" class="img-thumb">` : ''}
+        <p>${p.desc}</p>
+        <div><strong>NGO:</strong> ${p.ngo||'-'}</div>
+
+        <div style="margin-top:10px">
+          <strong>Timeline:</strong>
+          ${p.timeline.map(t=>`<div class="timeline-item">${new Date(t.at).toLocaleString()} — ${t.text}</div>`).join('')}
+        </div>
+      </div>
+    `).join('')
+    : '<div class="small">No posts yet</div>';
+}
+
+// ----------- NOTIFICATIONS -----------
+function addNotif(title,text){
+  const n = read(LS_NOTIFS, []);
+  n.unshift({title,text,when:new Date().toLocaleString()});
+  save(LS_NOTIFS, n);
+}
+function renderNotifs(){
+  const n = read(LS_NOTIFS, []);
+  $('notifList').innerHTML = n.length ? n.map(x=>`
+    <div class="post">
+      <strong>${x.title}</strong>
+      <div class="small">${x.text}</div>
+      <div class="small">${x.when}</div>
+    </div>
+  `).join('') : '<p class="small">No notifications</p>';
+}
+
+// ----------- HOME DASHBOARD -----------
+function renderHome(){
+  const user = read(LS_USER, {}).name;
+  const posts = read(LS_POSTS, []).filter(p=>p.user===user);
+  const stat = {
+    pending: posts.filter(p=>p.status==='pending').length,
+    progress: posts.filter(p=>p.status==='progress' || p.status==='inprogress').length,
+    completed: posts.filter(p=>p.status==='completed').length,
+    total: posts.length
+  };
+
+  $('homeStats').innerHTML = `
+    <div class="card" style="margin-top:10px">
+      <p>Total Posts: <b>${stat.total}</b></p>
+      <p>Pending: <b>${stat.pending}</b></p>
+      <p>In Progress: <b>${stat.progress}</b></p>
+      <p>Completed: <b>${stat.completed}</b></p>
+    </div>
+  `;
+}
+
+renderHome();
+
+
+function goHome(){
+  window.location.href = "index.html";
+}
+
+function logout(){
+  if(confirm("Are you sure you want to logout?")){
+    localStorage.removeItem("current_user_session");
+    window.location.href = "index.html";
+  }
+}
+
+</script>
+
+</body>
+</html>

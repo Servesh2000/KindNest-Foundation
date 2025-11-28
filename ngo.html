@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Kindnest — NGO Dashboard</title>
+<style>
+:root{
+  --bg1:#0a1020; --bg2:#07102a; --accent:#6c63ff; --accent2:#ff7a18;
+  --glass: rgba(255,255,255,0.03); --card:#071226cc; --muted:#9aa4b2;
+  --radius:12px; --shadow:0 10px 30px rgba(2,6,23,0.6);
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+}
+*{box-sizing:border-box}
+body{margin:0;color:#e6eef8;background:
+  radial-gradient(1200px 400px at 10% 10%, rgba(108,99,255,0.06), transparent 12%),
+  linear-gradient(180deg,var(--bg1),var(--bg2)); -webkit-font-smoothing:antialiased; min-height:100vh;}
+.app{display:grid;grid-template-columns:260px 1fr;gap:18px;padding:18px;align-items:start}
+.sidebar{background:linear-gradient(180deg, rgba(12,18,34,0.9), rgba(6,10,20,0.7));padding:18px;border-radius:var(--radius);box-shadow:var(--shadow)}
+.logo-badge{width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-weight:800}
+.brand{display:flex;gap:12px;align-items:center}
+.nav{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+.nav a{color:#a9bdcf;text-decoration:none;padding:10px;border-radius:10px;cursor:pointer}
+.nav a.active,.nav a:hover{background:linear-gradient(90deg, rgba(108,99,255,0.06), rgba(255,122,24,0.04));color:white}
+.small{color:var(--muted);font-size:13px}
+
+/* Workspace */
+.workspace{display:flex;flex-direction:column;gap:14px}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:12px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:0 6px 18px rgba(2,6,23,0.35)}
+.search input{padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:#eaf3ff;width:320px}
+.actions{display:flex;gap:8px;align-items:center}
+.btn{padding:8px 12px;border-radius:10px;border:none;cursor:pointer;background:linear-gradient(90deg,var(--accent),var(--accent2));color:white}
+.btn-ghost{padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#eaf3ff}
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:14px;border-radius:12px;box-shadow:0 8px 24px rgba(2,6,23,0.45)}
+.grid2{display:grid;grid-template-columns:1fr 360px;gap:14px}
+
+/* posts list */
+.case{background:rgba(255,255,255,0.03);padding:12px;border-radius:10px;margin-bottom:10px}
+.case h4{margin:0 0 6px 0}
+.badge{display:inline-block;padding:6px 10px;border-radius:999px;font-weight:700;font-size:12px;margin-left:8px}
+.badge.pending{background:#ffe9d6;color:#b45309}
+.badge.assigned{background:#eef2ff;color:#4338ca}
+.badge.progress{background:#fff7cc;color:#a16207}
+.badge.completed{background:#d1fae5;color:#065f46}
+
+/* inventory & team */
+.form-row{display:flex;gap:8px;align-items:center;margin-top:8px}
+.input{padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:#eaf3ff;width:100%}
+
+/* small helpers */
+.muted{color:var(--muted);font-size:13px}
+.img-thumb{max-width:120px;border-radius:8px;margin-top:8px;display:block}
+
+/* responsive */
+@media (max-width:980px){
+  .app{grid-template-columns:1fr;padding:12px}
+  .search input{width:100%}
+  .grid2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- sidebar -->
+  <aside class="sidebar" role="navigation" aria-label="NGO navigation">
+    <div class="brand">
+      <div class="logo-badge">N</div>
+      <div>
+        <div style="font-weight:700">Kindnest NGO</div>
+        <div class="small">NGO Panel</div>
+      </div>
+    </div>
+
+    <nav class="nav" id="nav">
+      <a onclick="ngoShow('dashboard')" id="link-dashboard" class="active">Dashboard</a>
+      <a onclick="ngoShow('cases')" id="link-cases">Cases</a>
+      <a onclick="ngoShow('inventory')" id="link-inventory">Inventory</a>
+      <a onclick="ngoShow('team')" id="link-team">Team</a>
+      <a onclick="ngoShow('reports')" id="link-reports">Reports</a>
+      <a onclick="ngoShow('settings')" id="link-settings">Settings</a>
+    </nav>
+
+    <div style="margin-top:auto">
+      <div class="small">Signed in as <strong>NGO Member</strong></div>
+    </div>
+  </aside>
+
+  <!-- workspace -->
+  <div class="workspace">
+    <header class="topbar" role="banner">
+      <div class="search"><input id="searchAll" placeholder="Search cases, title, category..." /></div>
+      <div class="actions">
+        <button class="btn-ghost" id="refreshBtn">Refresh</button>
+        <button class="btn" id="exportBtn">Export Cases CSV</button>
+        <button class="icon-btn" onclick="goHome()">🏠 Home</button>
+        <button class="icon-btn" onclick="logout()">🚪 Logout</button>
+
+      </div>
+    </header>
+
+    <!-- PAGES -->
+    <main id="page-dashboard" class="card">
+      <h3>NGO Dashboard</h3>
+      <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap">
+        <div class="card" style="flex:1;min-width:160px">
+          <div class="muted">Assigned</div>
+          <div id="statAssigned" style="font-weight:800;font-size:22px">0</div>
+        </div>
+        <div class="card" style="flex:1;min-width:160px">
+          <div class="muted">In Progress</div>
+          <div id="statProgress" style="font-weight:800;font-size:22px">0</div>
+        </div>
+        <div class="card" style="flex:1;min-width:160px">
+          <div class="muted">Completed</div>
+          <div id="statCompleted" style="font-weight:800;font-size:22px">0</div>
+        </div>
+        <div class="card" style="flex:1;min-width:160px">
+          <div class="muted">Total Cases</div>
+          <div id="statTotal" style="font-weight:800;font-size:22px">0</div>
+        </div>
+      </div>
+
+      <div class="grid2" style="margin-top:12px">
+        <section>
+          <h4 style="margin:0 0 8px 0">Recent Assigned Cases</h4>
+          <div id="recentCases"></div>
+        </section>
+
+        <aside>
+          <div class="card">
+            <h4 style="margin:0 0 8px 0">Notifications</h4>
+            <div id="ngoNotifList" style="max-height:300px;overflow:auto"></div>
+          </div>
+
+          <div class="card" style="margin-top:12px">
+            <h4 style="margin:0 0 8px 0">Quick Actions</h4>
+            <button class="btn" onclick="claimFirst()">Claim Next Pending</button>
+            <button class="btn-ghost" onclick="syncNow()">Sync Now</button>
+          </div>
+        </aside>
+      </div>
+    </main>
+
+    <!-- CASES -->
+    <section id="page-cases" class="card" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin:0">Cases</h3>
+        <div class="muted">Manage active cases and update progress</div>
+      </div>
+
+      <div style="margin-top:10px">
+        <input id="caseFilter" placeholder="Filter by text..." class="input" style="width:100%;padding:10px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.04);"/>
+      </div>
+
+      <div id="casesList" style="margin-top:12px"></div>
+    </section>
+
+    <!-- Inventory -->
+    <section id="page-inventory" class="card" style="display:none">
+      <h3>Inventory</h3>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:10px">
+        <input id="invName" placeholder="Item name (e.g., Food Pack)" class="input"/>
+        <input id="invQty" placeholder="Quantity" type="number" class="input" style="width:120px"/>
+        <button class="btn" id="addInv">Add</button>
+      </div>
+      <div id="invList" style="margin-top:12px"></div>
+    </section>
+
+    <!-- Team -->
+    <section id="page-team" class="card" style="display:none">
+      <h3>Team</h3>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:10px">
+        <input id="memberName" placeholder="Member name" class="input"/>
+        <input id="memberRole" placeholder="Role (Volunteer)" class="input" style="width:180px"/>
+        <button class="btn" id="addMember">Add</button>
+      </div>
+      <div id="teamList" style="margin-top:12px"></div>
+    </section>
+
+    <!-- Reports -->
+    <section id="page-reports" class="card" style="display:none">
+      <h3>Reports</h3>
+      <div class="muted">Export case lists, monthly summaries and simple charts</div>
+      <div style="margin-top:12px">
+        <button class="btn" id="exportCases">Export Cases CSV</button>
+      </div>
+      <div id="reportsArea" style="margin-top:12px"></div>
+    </section>
+
+    <!-- Settings -->
+    <section id="page-settings" class="card" style="display:none">
+      <h3>Settings</h3>
+      <label class="muted">NGO Name</label>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <input id="ngoName" class="input" placeholder="Your NGO name"/>
+        <input id="ngoContact" class="input" placeholder="Contact number" style="width:160px"/>
+        <button class="btn" id="saveNgoProfile">Save</button>
+      </div>
+
+      <div style="margin-top:12px">
+        <button class="btn-ghost" id="clearLocal">Clear Local Storage (danger)</button>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+/* ============================
+   NGO Dashboard JS (localStorage)
+   Keys used:
+   - kn_posts_v2 (cases from users)
+   - kn_notifs_v2 (notifications)
+   - kn_ngos_v1 (ngos list)
+   - kn_ngo_inventory_v1 (inventory for NGO)
+   - kn_ngo_team_v1 (team members)
+   - kn_ngo_profile_v1 (this ngo profile)
+   ============================ */
+
+const LS_POSTS = 'kn_posts_v2';
+const LS_NOTIFS = 'kn_notifs_v2';
+const LS_NGOS  = 'kn_ngos_v1';
+const LS_INV   = 'kn_ngo_inventory_v1';
+const LS_TEAM  = 'kn_ngo_team_v1';
+const LS_PROFILE = 'kn_ngo_profile_v1';
+
+// Helpers
+const $ = id => document.getElementById(id);
+const read = (k, def) => JSON.parse(localStorage.getItem(k) || JSON.stringify(def));
+const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+
+// Seed demo if missing
+if(!localStorage.getItem(LS_POSTS)){
+  const demo = [
+    { id: Date.now()-90000, title:'Food for 30 people', category:'Food', type:'Request', desc:'Hot cooked meal needed', status:'pending', ngo:null, timeline:[] },
+    { id: Date.now()-70000, title:'Blankets needed', category:'Clothes', type:'Request', desc:'Blankets for elderly', status:'pending', ngo:null, timeline:[] },
+    { id: Date.now()-30000, title:'Medicine fund', category:'Money', type:'Request', desc:'Help for medicines', status:'pending', ngo:null, timeline:[] }
+  ];
+  save(LS_POSTS, demo);
+}
+if(!localStorage.getItem(LS_NGOS)){
+  save(LS_NGOS, [{name:'Helping Hands',contact:'9876543210'},{name:'Food For All',contact:'9876501234'}]);
+}
+if(!localStorage.getItem(LS_INV)) save(LS_INV, []);
+if(!localStorage.getItem(LS_TEAM)) save(LS_TEAM, []);
+if(!localStorage.getItem(LS_PROFILE)) save(LS_PROFILE, {name:'Kindnest NGO', contact:''});
+
+// Navigation
+function ngoShow(page){
+  const pages = ['dashboard','cases','inventory','team','reports','settings'];
+  pages.forEach(p => {
+    const el = document.getElementById('page-' + p);
+    if(el) el.style.display = (p===page) ? (p==='dashboard' ? 'block' : 'block') : 'none';
+    const link = document.getElementById('link-' + p);
+    if(link) link.classList.toggle('active', p===page);
+  });
+  // render page-specific content
+  if(page==='dashboard') renderDashboard();
+  if(page==='cases') renderCases();
+  if(page==='inventory') renderInventory();
+  if(page==='team') renderTeam();
+  if(page==='reports') renderReports();
+  if(page==='settings') renderSettings();
+}
+window.ngoShow = ngoShow;
+
+// Render functions
+function renderDashboard(){
+  const posts = read(LS_POSTS, []);
+  const assigned = posts.filter(p=>p.ngo === getProfile().name || p.status==='assigned');
+  const inprogress = posts.filter(p=>p.status==='progress' || p.status==='inprogress');
+  const completed = posts.filter(p=>p.status==='completed');
+  $('statAssigned').innerText = assigned.length;
+  $('statProgress').innerText = inprogress.length;
+  $('statCompleted').innerText = completed.length;
+  $('statTotal').innerText = posts.length;
+
+  const recent = assigned.slice(0,6);
+  const rc = $('recentCases');
+  rc.innerHTML = recent.length ? recent.map(p => `
+    <div class="case">
+      <h4>${escape(p.title)} <span class="badge ${p.status}">${p.status}</span></h4>
+      <div class="muted">${escape(p.category)} • ${escape(p.type)}</div>
+      <div style="margin-top:8px">${escape(p.desc||'')}</div>
+      <div style="margin-top:8px" class="muted">NGO: ${escape(p.ngo||'-')}</div>
+    </div>
+  `).join('') : '<div class="muted">No recent assigned cases</div>';
+  renderNotifs();
+}
+
+function renderCases(filter=''){
+  const list = $('casesList');
+  const posts = read(LS_POSTS, []).filter(p => (p.title+' '+p.category+' '+p.desc).toLowerCase().includes(filter.toLowerCase()));
+  if(!posts.length){
+    list.innerHTML = '<div class="muted">No cases found</div>'; return;
+  }
+  list.innerHTML = posts.map(p => {
+    const imgHtml = p.proof ? `<img src="${p.proof}" class="img-thumb" alt="proof" />` : '';
+    const ngoInfo = p.ngo ? `<div class="muted">Assigned to: ${escape(p.ngo)}</div>` : '';
+    return `
+      <div class="case" id="case-${p.id}">
+        <h4>${escape(p.title)} <span class="badge ${p.status}">${p.status}</span></h4>
+        <div class="muted">${escape(p.category)} • ${escape(p.type)}</div>
+        <p style="margin-top:8px">${escape(p.desc||'')}</p>
+        ${imgHtml}
+        ${ngoInfo}
+        <div style="margin-top:8px;display:flex;gap:8px;">
+          ${p.status==='pending' ? `<button class="btn" onclick="claimCase(${p.id})">Claim</button>` : ''}
+          ${p.status!=='completed' ? `<button class="btn-ghost" onclick="startProgress(${p.id})">Start Progress</button>` : ''}
+          ${p.status!=='completed' ? `<button class="btn" onclick="completeCase(${p.id})">Complete</button>` : ''}
+          <button class="btn-ghost" onclick="openCaseEditor(${p.id})">Add Note / Proof</button>
+          <button class="btn-ghost" onclick="assignToMember(${p.id})">Assign to Member</button>
+        </div>
+        <div id="timeline-${p.id}" style="margin-top:10px"></div>
+      </div>
+    `;
+  }).join('');
+  // render timelines after injecting HTML
+  posts.forEach(p => renderTimeline(p.id));
+}
+
+function renderTimeline(id){
+  const p = read(LS_POSTS, []).find(x=>x.id===id);
+  const t = document.getElementById('timeline-' + id);
+  if(!p || !t) return;
+  if(!p.timeline || !p.timeline.length) { t.innerHTML = '<div class="muted">No events</div>'; return; }
+  t.innerHTML = p.timeline.map(ev => `<div class="muted" style="font-size:13px">${new Date(ev.at || ev.when || ev.when).toLocaleString()} — ${escape(ev.text || ev)}</div>`).join('');
+}
+
+function renderInventory(){
+  const inv = read(LS_INV, []);
+  const wrap = $('invList');
+  if(!inv.length) { wrap.innerHTML = '<div class="muted">Inventory is empty.</div>'; return; }
+  wrap.innerHTML = inv.map((it, idx) => `
+    <div class="card">
+      <strong>${escape(it.name)}</strong> <div class="muted">Qty: ${it.qty}</div>
+      <div style="margin-top:8px">
+        <button class="btn-ghost" onclick="useInventory(${idx})">Use item</button>
+        <button class="btn" onclick="removeInventory(${idx})">Remove</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderTeam(){
+  const team = read(LS_TEAM, []);
+  const wrap = $('teamList');
+  if(!team.length) { wrap.innerHTML = '<div class="muted">No team members added.</div>'; return; }
+  wrap.innerHTML = team.map((m, idx) => `
+    <div class="card">
+      <strong>${escape(m.name)}</strong>
+      <div class="muted">${escape(m.role||'Volunteer')}</div>
+      <div style="margin-top:8px"><button class="btn-ghost" onclick="removeMember(${idx})">Remove</button></div>
+    </div>
+  `).join('');
+}
+
+function renderNotifs(){
+  const list = read(LS_NOTIFS, []);
+  const wrap = $('ngoNotifList');
+  wrap.innerHTML = list.length ? list.map(n => `<div style="padding:8px;border-bottom:1px solid rgba(255,255,255,0.03)"><strong>${escape(n.title||'')}</strong><div class="muted" style="margin-top:4px">${escape(n.text||'')}</div><div class="muted" style="font-size:12px;margin-top:6px">${escape(n.when)}</div></div>`).join('') : '<div class="muted">No notifications</div>';
+}
+
+// Actions
+function getProfile(){ return read(LS_PROFILE, {name:'Kindnest NGO', contact:''}); }
+function setProfile(p){ save(LS_PROFILE, p); }
+
+function claimCase(id){
+  const posts = read(LS_POSTS, []);
+  const p = posts.find(x=>x.id===id);
+  if(!p) return alert('Case not found');
+  const ngo = getProfile().name || prompt('Enter your NGO name:','Kindnest NGO');
+  p.status = 'assigned';
+  p.ngo = ngo;
+  p.timeline = p.timeline || [];
+  p.timeline.push({at:new Date().toISOString(), text:`Claimed by ${ngo}`});
+  save(LS_POSTS, posts);
+  addNotif('Case claimed', `${p.title} claimed by ${ngo}`);
+  renderCases();
+  renderDashboard();
+}
+
+function startProgress(id){
+  const posts = read(LS_POSTS, []);
+  const p = posts.find(x=>x.id===id);
+  if(!p) return;
+  p.status = 'progress';
+  p.timeline = p.timeline || [];
+  p.timeline.push({at:new Date().toISOString(), text:'Work started by NGO'});
+  save(LS_POSTS, posts);
+  addNotif('Progress update', `${p.title} is in progress`);
+  renderCases(); renderDashboard();
+}
+
+function completeCase(id){
+  const posts = read(LS_POSTS, []);
+  const p = posts.find(x=>x.id===id);
+  if(!p) return;
+  p.status = 'completed';
+  p.timeline = p.timeline || [];
+  p.timeline.push({at:new Date().toISOString(), text:'Completed by NGO'});
+  save(LS_POSTS, posts);
+  addNotif('Case completed', `${p.title} marked completed by NGO`);
+  renderCases(); renderDashboard();
+}
+
+function assignToMember(id){
+  const team = read(LS_TEAM, []);
+  if(!team.length) return alert('No team members. Add team in Team page first.');
+  const names = team.map(t=>t.name).join(', ');
+  const name = prompt('Assign to team member (choose/enter): Available: ' + names, team[0].name);
+  if(!name) return;
+  const posts = read(LS_POSTS, []);
+  const p = posts.find(x=>x.id===id);
+  p.timeline = p.timeline || [];
+  p.timeline.push({ at: new Date().toISOString(), text:`Assigned to member: ${name}`});
+  save(LS_POSTS, posts);
+  addNotif('Assigned to member', `${p.title} assigned to ${name}`);
+  renderCases(); renderDashboard();
+}
+
+function openCaseEditor(id){
+  const note = prompt('Write a short note / proof description:');
+  if(note === null) return;
+  const posts = read(LS_POSTS, []);
+  const p = posts.find(x=>x.id===id);
+  p.timeline = p.timeline || [];
+  p.timeline.push({ at: new Date().toISOString(), text: `Note: ${note}` });
+  // Optionally allow proof image via prompt for dataURL
+  const addImg = confirm('Do you want to paste an image dataURL (base64) as proof? (You can paste a small dataURL)');
+  if(addImg){
+    const url = prompt('Paste image dataURL (starts with data:):');
+    if(url) p.proof = url;
+  }
+  save(LS_POSTS, posts);
+  addNotif('Note added', `A note was added to ${p.title}`);
+  renderCases(); renderTimeline(id); renderDashboard();
+}
+
+// Inventory actions
+$('addInv') && $('addInv').addEventListener('click', ()=>{
+  const name = $('invName').value.trim();
+  const qty = parseInt($('invQty').value,10) || 0;
+  if(!name || qty<=0) return alert('Enter valid name and qty');
+  const inv = read(LS_INV, []);
+  inv.push({name, qty});
+  save(LS_INV, inv);
+  $('invName').value=''; $('invQty').value='';
+  renderInventory();
+});
+
+function removeInventory(i){
+  const inv = read(LS_INV, []);
+  if(!confirm('Remove this item?')) return;
+  inv.splice(i,1); save(LS_INV, inv); renderInventory();
+}
+function useInventory(i){
+  const inv = read(LS_INV, []);
+  const item = inv[i];
+  if(!item) return;
+  const useQty = parseInt(prompt(`Enter quantity to use (available ${item.qty})`, '1'),10);
+  if(!useQty || useQty <=0) return;
+  if(useQty > item.qty) return alert('Not enough quantity');
+  item.qty -= useQty;
+  if(item.qty === 0) inv.splice(i,1);
+  save(LS_INV, inv);
+  addNotif('Inventory used', `${useQty} x ${item.name} used`);
+  renderInventory();
+}
+
+// Team actions
+$('addMember') && $('addMember').addEventListener('click', ()=>{
+  const name = $('memberName').value.trim();
+  const role = $('memberRole').value.trim() || 'Volunteer';
+  if(!name) return alert('Enter member name');
+  const team = read(LS_TEAM, []);
+  team.push({name, role});
+  save(LS_TEAM, team);
+  $('memberName').value=''; $('memberRole').value='';
+  renderTeam();
+});
+function removeMember(i){
+  if(!confirm('Remove member?')) return;
+  const team = read(LS_TEAM, []);
+  team.splice(i,1); save(LS_TEAM, team); renderTeam();
+}
+
+// Notifications
+function addNotif(title, text){
+  const n = read(LS_NOTIFS, []);
+  n.unshift({title, text, when: new Date().toLocaleString()});
+  save(LS_NOTIFS, n);
+  renderNotifs();
+}
+
+// Export CSV
+$('exportBtn') && $('exportBtn').addEventListener('click', ()=> exportCasesCSV());
+$('exportCases') && $('exportCases').addEventListener('click', ()=> exportCasesCSV());
+
+function exportCasesCSV(){
+  const posts = read(LS_POSTS, []);
+  if(!posts.length) return alert('No cases to export');
+  const rows = [['id','title','category','type','status','ngo','desc']];
+  posts.forEach(p => rows.push([p.id, p.title, p.category, p.type, p.status, p.ngo || '', (p.desc||'').replace(/\n/g,' ')]));
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'}); const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'ngo-cases.csv'; a.click(); URL.revokeObjectURL(url);
+}
+
+// Settings
+$('saveNgoProfile') && $('saveNgoProfile').addEventListener('click', ()=>{
+  const name = $('ngoName').value.trim();
+  const contact = $('ngoContact').value.trim();
+  if(!name) return alert('Enter NGO name');
+  save(LS_PROFILE, {name, contact});
+  // Also add to global NGOs list if not present
+  const ngos = read(LS_NGOS, []);
+  if(!ngos.find(n=>n.name === name)) { ngos.push({name, contact}); save(LS_NGOS, ngos); }
+  alert('NGO profile saved');
+  renderDashboard();
+});
+
+// Clear local (danger)
+$('clearLocal') && $('clearLocal').addEventListener('click', ()=>{
+  if(!confirm('Clear NGO local data? This will remove inventory, team and profile only.')) return;
+  localStorage.removeItem(LS_INV); localStorage.removeItem(LS_TEAM); localStorage.removeItem(LS_PROFILE);
+  location.reload();
+});
+
+// Small utilities
+function escape(s){ return (''+(s||'')).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escapeHtml(s){ return escape(s); }
+
+// Helpers to get HTML-escaped strings in template
+function escapeTemplate(s){ return escapeHtml(s); }
+
+// When filter input changes
+$('caseFilter') && $('caseFilter').addEventListener('input', (e)=> renderCases(e.target.value));
+
+// Search all at top
+$('searchAll') && $('searchAll').addEventListener('input', (e)=> {
+  const v = e.target.value.trim();
+  // filter cases list if on cases page
+  if(document.getElementById('page-cases').style.display !== 'none') renderCases(v);
+  // show quick match in dashboard recent
+  renderDashboard();
+});
+
+// Refresh & sync
+$('refreshBtn') && $('refreshBtn').addEventListener('click', ()=> { renderAll(); alert('Refreshed'); });
+function syncNow(){ renderAll(); alert('Synced with localStorage'); }
+
+// Claim first pending (quick action)
+function claimFirst(){
+  const posts = read(LS_POSTS, []);
+  const p = posts.find(x=>x.status==='pending');
+  if(!p) return alert('No pending cases');
+  claimCase(p.id);
+}
+
+// Render settings initial
+function renderSettings(){
+  const prof = getProfile();
+  $('ngoName').value = prof.name || '';
+  $('ngoContact').value = prof.contact || '';
+}
+
+// Render team & inventory specifics
+function renderInventory(){ // override earlier to ensure called correctly
+  const inv = read(LS_INV, []);
+  const wrap = $('invList');
+  if(!wrap) return;
+  if(!inv.length) { wrap.innerHTML = '<div class="muted">Inventory is empty.</div>'; return; }
+  wrap.innerHTML = inv.map((it, idx) => `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div>
+        <strong>${escape(it.name)}</strong>
+        <div class="muted">Qty: ${it.qty}</div>
+      </div>
+      <div>
+        <button class="btn-ghost" onclick="useInventory(${idx})">Use</button>
+        <button class="btn" onclick="removeInventory(${idx})">Remove</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Render team simple
+function renderTeam(){
+  const team = read(LS_TEAM, []);
+  const wrap = $('teamList');
+  if(!wrap) return;
+  if(!team.length) { wrap.innerHTML = '<div class="muted">No team members added.</div>'; return; }
+  wrap.innerHTML = team.map((m, idx) => `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div><strong>${escape(m.name)}</strong><div class="muted">${escape(m.role)}</div></div>
+      <div><button class="btn-ghost" onclick="removeMember(${idx})">Remove</button></div>
+    </div>
+  `).join('');
+}
+
+// Initial renderAll
+function renderAll(){
+  renderDashboard();
+  renderCases();
+  renderInventory();
+  renderTeam();
+  renderNotifs();
+  renderSettings();
+}
+renderAll();
+
+// Expose some functions for onclick handlers
+window.claimCase = claimCase;
+window.startProgress = startProgress;
+window.completeCase = completeCase;
+window.openCaseEditor = openCaseEditor;
+window.assignToMember = assignToMember;
+window.assignPrompt = assignToMember;
+window.renderTimeline = renderTimeline;
+window.useInventory = useInventory;
+window.removeInventory = removeInventory;
+window.removeMember = removeMember;
+window.ngoShow = ngoShow;
+window.exportCasesCSV = exportCasesCSV;
+
+
+
+function goHome(){
+  window.location.href = "index.html";
+}
+
+function logout(){
+  if(confirm("Are you sure you want to logout?")){
+    localStorage.removeItem("current_user_session");
+    window.location.href = "index.html";
+  }
+}
+
+</script>
+
+</body>
+</html>
