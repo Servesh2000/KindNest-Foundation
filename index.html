@@ -1,9 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
+
+
+	
+	<link rel="manifest" href="manifest.json">
+	<meta name="theme-color" content="#EDEA3E">
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-	<meta name="theme-color" content="#EDEA3E" />
 	<!-- TODO: Add OG tags -->
 	<!-- Reference: https://gethead.info/ -->
 	
@@ -27,17 +32,36 @@
 
 <body>
 
+
+<!-- SPLASH SCREEN -->
+<div id="splash">
+  <img src="assets/brand/logo.png" alt="logo">
+  <h2 id="loadingText">Loading...</h2>		
+  <div class="loader"></div>
+</div>
+
 	<a href="logsog.html" class="floating-btn">Login / Signup</a>
 
 	<div id="wrapper" class="container-fluid">
 		
-		<!-- Navigation section -->
+		<!-- Navigation section
 		    <nav class="navbar navbar-expand-xl fixed-top navbar-dark bg-dark">
 			<a class="navbar-brand" href="#Intro">KindNest Foundation</a>
 			<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#PrimaryMenu" aria-controls="menu" aria-expanded="false" aria-label="Toggle navigation">
 				<span class="navbar-toggler-icon"></span>
-			</button>
+			</button> -->
+
+			<div class="bottom-nav">
+  <a href="#Intro">🏠</a>
+  <a href="#Our-Causes">📢</a>
+  <a href="#Support-Us">💝</a>
+  <a href="#Get-In-Touch">📞</a>
+</div>
 			
+
+
+
+
 			<div id="PrimaryMenu" class="collapse navbar-collapse">
 				<ul class="navbar-nav ml-auto">
 					<li class="nav-item active">
@@ -434,12 +458,61 @@ document.addEventListener("DOMContentLoaded", function() {
   window.backToSignupSelection = backToSignupSelection;
 
 });
-
+	
 
 
 
 	</script>
+	<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js")
+    .then(() => console.log("Service Worker Registered"));
+}
 
+
+
+</script>
+
+
+
+<script>
+window.addEventListener("load", () => {
+  const splash = document.getElementById("splash");
+
+  // minimum 2 sec show kare (real app feel)
+  setTimeout(() => {
+    splash.style.opacity = "0";
+    splash.style.transition = "0.5s";
+
+    setTimeout(() => {
+      splash.style.display = "none";
+    }, 500);
+
+  }, 2000);
+});
+let text = document.getElementById("loadingText");
+
+setTimeout(() => text.innerText = "Fetching Data...", 700);
+setTimeout(() => text.innerText = "Almost Ready...", 1400);
+</script>
+
+
+
+<button id="installBtn" style="display:none;">Install App</button>
+
+
+
+<script>let deferredPrompt;
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById("installBtn").style.display = "block";
+});
+
+document.getElementById("installBtn").addEventListener("click", () => {
+  deferredPrompt.prompt();
+});</script>
 	
 </body>
 </html>  
